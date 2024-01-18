@@ -1,21 +1,21 @@
 export default class Item{
     constructor(
-        private code: string, 
+        private product_code: string, 
         private description: string, 
-        private amount: number, 
+        private quantity: number, 
         private price: number
     ){}
 
-    getCode():string {
-        return this.code
+    getProductCode():string {
+        return this.product_code
     }
 
     getDescription():string {
         return this.description
     }
 
-    getAmount():number {
-        return this.amount
+    getQuantity():number {
+        return this.quantity
     }
 
     getPrice():number {
@@ -23,14 +23,14 @@ export default class Item{
     }
 
     getTotal(){
-        return this.price * this.amount
+        return this.price * this.quantity
     }
 
     amountUp(step: number = 1){
-        this.amount += step;
+        this.quantity += step;
     }
 
     amountDown(step: number = 1){
-        this.amount -= step;
+        this.quantity -= step;
     }
 }
