@@ -1,17 +1,32 @@
 export default class Item{
-    constructor(
-        private product_code: string, 
-        private description: string, 
+    private constructor(
+        private guestCheckPadCode: string,
+        private productCode: string, 
+        private sequence: number,
         private quantity: number, 
         private price: number
     ){}
 
-    getProductCode():string {
-        return this.product_code
+    public static create(guestCheckPadCode:string, productCode:string, sequence:number, quantity:number, price:number){
+        return this.restore(guestCheckPadCode, productCode, sequence, quantity, price)
     }
 
-    getDescription():string {
-        return this.description
+    public static restore(guestCheckPadCode:string, productCode:string, sequence:number, quantity:number, price:number){
+        return new Item(guestCheckPadCode, productCode, sequence, quantity, price)
+    }
+
+    /*
+    getGuestCheckPadCode(){
+        return this.guestCheckPadCode
+    }
+    */
+
+    getProductCode():string {
+        return this.productCode
+    }
+
+    getSequence():number {
+        return this.sequence
     }
 
     getQuantity():number {
@@ -26,11 +41,11 @@ export default class Item{
         return this.price * this.quantity
     }
 
-    amountUp(step: number = 1){
+    quantityUp(step: number = 1){
         this.quantity += step;
     }
 
-    amountDown(step: number = 1){
+    quantityDown(step: number = 1){
         this.quantity -= step;
     }
 }

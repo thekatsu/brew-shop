@@ -1,36 +1,49 @@
 import { randomUUID } from 'crypto'
 import Item from "./Item";
+import Payment from './Payment';
 
-export enum STATUS {
+export enum GUESTCHECKPAD_STATUS {
     OPEN,
-    CLOSE,
-    PAID,
-    CANCELED
+    CLOSE
 }
 
 export default class GuestCheckPad{
     private items: Item[] = []
-    private status: STATUS
+    private payment?: Payment 
+    private status: GUESTCHECKPAD_STATUS = GUESTCHECKPAD_STATUS.OPEN
     
-    private constructor(private code: string, private description: string){
-        this.status = STATUS.OPEN
+    private constructor(private code: string, private description: string){}
+
+    public static restore(code:string, description:string):GuestCheckPad{
+        return new GuestCheckPad(code, description)
     }
 
-    public static create({code, description}:{code?:string, description:string}):GuestCheckPad{
-        if(!code) code = randomUUID()
-        return new GuestCheckPad(code, description)
+    public static create(description?:string):GuestCheckPad{
+        let code = randomUUID()
+        if(!description) description = code
+        return this.restore(code, description)
     }
     
     getCode(): string{
         return this.code
     }
 
-    getDescription():string {
-        return this.description
+    getStatus():GUESTCHECKPAD_STATUS{
+        return this.status
     }
 
-    getStatus(){
-        return this.status
+    setPayment(payment: Payment):void{
+        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        this.payment = payment
+        this.status = GUESTCHECKPAD_STATUS.CLOSE
+    }
+
+    getPayment():Payment | undefined {
+        return this.payment
+    }
+
+    getDescription():string {
+        return this.description
     }
 
     getTotal():number {
@@ -45,44 +58,30 @@ export default class GuestCheckPad{
         return this.items
     }
 
-    addItem(product_code: string, description: string, price: number, amount: number = 1): void{
-        let item = new Item(product_code, description, amount, price)
+    addItem(productCode: string, price: number, quantity: number = 1): void{
+        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        const sequence = this.items.filter((item)=>item.getProductCode() === productCode).length + 1
+        let item = Item.create(this.getCode(), productCode, sequence, quantity, price)
         this.items.push(item)
     }
 
-    increaseAmount(product_code: string, step:number = 1):void {
-        const item = this.items.find((item)=>item.getProductCode() === product_code)
+    increaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
+        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        const item = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
         if(!item) throw new Error("O produto não esta na comanda!")
-        if(item) item.amountUp(step)
+        if(item) item.quantityUp(step)
     }
 
-    decreaseAmount(product_code: string, step:number = 1):void {
-        const item = this.items.find((item)=>item.getProductCode() === product_code)
-        if(!item) throw new Error("O produto não esta na comanda!")
-        if(item) item.amountDown(step)
+    decreaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
+        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        const itemInGuestCheckPad = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
+        if(!itemInGuestCheckPad) throw new Error("O produto não esta na comanda!")
+        itemInGuestCheckPad.quantityDown(step)
+        if(itemInGuestCheckPad.getQuantity() === 0)
+            this.items = this.items.filter((item) => item !== itemInGuestCheckPad)
     }
 
-    reopen(){
-        if(this.status !== STATUS.CANCELED){
-            this.status = STATUS.OPEN
-        }
-    }
-
-    close(){
-        if(this.status === STATUS.OPEN){
-            this.status = STATUS.CLOSE
-        }
-    }
-
-    pay(){
-        if(this.status === STATUS.CLOSE){
-            this.status = STATUS.PAID
-        }
-    }
-
-    cancel(){
-        if(this.status !== STATUS.PAID){
-            this.status = STATUS.CANCELED
-        }
+    getItemsByProductCode(productCode: string): Item[]{
+        return this.items.filter((item)=>item.getProductCode() === productCode)
     }
 }

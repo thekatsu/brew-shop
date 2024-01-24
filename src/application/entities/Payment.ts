@@ -1,83 +1,142 @@
 import { randomUUID } from 'crypto'
 import GuestCheckPad from "./GuestCheckPad";
-import Installment from "./Installment";
+import Installment, { INSTALLMENT_STATUS } from "./Installment";
 
-export default class Payment{
-    private installments: Installment[] = []
+export enum PAYMENT_STATUS {
+    OPEN,
+    PAID,
+    CANCELED
+}
+
+export default class Payment {
     private total: number = 0
-    private total_open: number = 0
+    private totalOpen: number = 0
+    private status: PAYMENT_STATUS
     
-    constructor(readonly code: string, private guestcheckpads: GuestCheckPad[], private number_of_installments: number = 1){
+    private constructor(private code: string, private guestCheckPads: GuestCheckPad[], private installments: Installment[] = []){
+        this.status = PAYMENT_STATUS.OPEN
         this.calculateTotal()
+        if(installments.length > 0){
+            this.setInstallments(installments)
+        } else {
+            this.generateInstallments(1)
+        }
         this.calculateTotalOpen()
-        this.generateInstallments()
     }
 
-    public static create({code, guestcheckpads, number_of_installments}:{code?:string, guestcheckpads: GuestCheckPad[], number_of_installments: number}): Payment{
-        if(!code) code = randomUUID()
-        return new Payment(code, guestcheckpads, number_of_installments)
+    public static create(guestCheckPads: GuestCheckPad[], numberOfInstallments: number = 1): Payment{
+        let code = randomUUID()
+        let payment = new Payment(code, guestCheckPads)
+        payment.generateInstallments(numberOfInstallments)
+        return payment
     }
 
-    getCode(){
+    public static restore(code: string, guestCheckPads: GuestCheckPad[], installments: Installment[]): Payment{
+        return new Payment(code, guestCheckPads, installments)
+    }
+
+    getCode():string{
         return this.code
     }
 
-    calculateTotal(){
-        this.guestcheckpads.forEach((guestcheckpad)=>{
-            this.total += guestcheckpad.getTotal()
+    getStatus():PAYMENT_STATUS{
+        return this.status
+    }
+
+    private calculateTotal():void{
+        this.total = 0 
+        this.guestCheckPads.forEach((guestCheckPad)=>{
+            this.total += guestCheckPad.getTotal()
         })
     }
 
-    calculateTotalOpen(){
-        this.total_open += this.getTotalOutstandingInstallments() - this.getTotalInstallmentsPaid()
+    getTotal():number{
+        return this.total
     }
 
-    getTotalOutstandingInstallments(){
+    private calculateTotalOpen():void{
+        this.totalOpen = this.total - this.getTotalInstallmentsPaid()
+    }
+
+    getTotalOpen():number{
+        return this.totalOpen
+    }
+
+    getGuestCheckPads():GuestCheckPad[]{
+        return this.guestCheckPads
+    }
+
+    getInstallments():Installment[]{
         return this.installments
-            .filter((installment)=>installment.status !== "pago")
-            .map((installment)=>installment.value)
-            .reduce((accumulador, current)=>{
-                return accumulador + current
-            }, 0)
     }
 
-    getGuestCheckPads(){
-        return this.guestcheckpads
-    }
-
-    getInstallments(){
+    getTotalOutstandingInstallments():number{
         return this.installments
+            .filter((installment)=>installment.getStatus() === INSTALLMENT_STATUS.OPEN)
+            .map((installment)=>installment.getValue())
+            .reduce((accumulador, current) => accumulador + current, 0)
     }
 
-    getTotalInstallmentsPaid(){
+    getTotalInstallmentsPaid():number{
         return this.installments
-            .filter((installment)=>installment.status === "pago")
-            .map((installment)=>installment.value)
-            .reduce((accumulador, current)=>{
-                return accumulador + current
-            }, 0)
+            .filter((installment)=>installment.getStatus() === INSTALLMENT_STATUS.PAID)
+            .map((installment)=>installment.getValue())
+            .reduce((accumulador, current) => accumulador + current, 0)
     }
 
-    setNumberOfInstallments(number:number){
-        this.number_of_installments = number
+    setInstallments(installments: Installment[]){
+        this.installments = installments
     }
 
-    generateInstallments(){
-        const value_of_installment = Math.round((this.total/this.number_of_installments)*100)/100
-        let sum_of_installments = 0
-        this.installments = this.installments.filter((installment)=>installment.status === "pago")
-        for(let i = 0; i < this.number_of_installments; i++ ){
-            let value = value_of_installment
-            if(i !== this.number_of_installments-1){
-                if(sum_of_installments + value < this.total_open){
-                    value += this.total_open - (sum_of_installments + value)
+    private generateInstallments(numberOfInstallments:number):void{
+        const baseValueOfInstallment = Math.round((this.total/numberOfInstallments)*100)/100
+        let sumOfInstallments = 0
+        this.installments = this.installments.filter((installment)=>installment.getStatus() === INSTALLMENT_STATUS.PAID)
+        for(let i = 1; i <= numberOfInstallments; i++ ){
+            let value = baseValueOfInstallment
+            if(i === numberOfInstallments){
+                if(sumOfInstallments + value > this.totalOpen){
+                    value -= (sumOfInstallments + value) - this.totalOpen
                 } else {
-                    value += (sum_of_installments + value) - this.total_open
+                    value += this.totalOpen - (sumOfInstallments + value)
                 }
             }
-            sum_of_installments += value
-            
-            this.installments.push(new Installment(this.code, i, value))
+            sumOfInstallments +=  Math.round(value*100)/100
+            this.installments.push(new Installment(this.code, i, Math.round(value*100)/100))
         }
+    }
+
+    payInstallment(sequence: number){
+        this.installments = this.installments
+            .map((installment)=>{
+                if(installment.getSequence() === sequence) {
+                    installment.pay()
+                }
+                return installment
+            })
+        this.calculateTotalOpen()
+        if(this.totalOpen === 0) this.status = PAYMENT_STATUS.PAID
+    }
+
+    alterInstallment(sequence: number, value: number){
+        this.installments = this.installments
+            .map((installment)=>{
+                if(installment.getSequence() === sequence) {
+                    if((this.totalOpen - installment.getValue()) + value > this.totalOpen) throw new Error("O valor excede o total em aberto!")
+                    installment.setValue(value)
+                }
+                return installment
+            })
+        this.calculateTotalOpen()
+    }
+
+    cancel(){
+        if(this.getStatus() === PAYMENT_STATUS.PAID) throw new Error("Pagamento com o status pago não pode ser cancelado!")
+        this.installments = this.installments
+            .map((installment)=>{
+                if(installment.getStatus() == INSTALLMENT_STATUS.OPEN) installment.cancel()
+                return installment
+            })
+        this.status = PAYMENT_STATUS.CANCELED
     }
 }

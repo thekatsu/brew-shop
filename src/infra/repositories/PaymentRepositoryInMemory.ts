@@ -17,7 +17,7 @@ export default class PaymentRepositoryInMemory implements IPaymentGuestCheckPadR
     }
     
     getByCode(code: string) {
-        const payment = this.payments.find((payment)=>payment.code === code)
+        const payment = this.payments.find((payment)=>payment.getCode() === code)
         if(!payment) throw new Error("Pagamento não localizado!")
         return payment
     }
