@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import GuestCheckPad from "./GuestCheckPad";
+import Order from "./Order";
 import Installment, { INSTALLMENT_STATUS } from "./Installment";
 
 export enum PAYMENT_STATUS {
@@ -13,7 +13,7 @@ export default class Payment {
     private totalOpen: number = 0
     private status: PAYMENT_STATUS
     
-    private constructor(private code: string, private guestCheckPads: GuestCheckPad[], private installments: Installment[] = []){
+    private constructor(private code: string, private orders: Order[], private installments: Installment[] = []){
         this.status = PAYMENT_STATUS.OPEN
         this.calculateTotal()
         if(installments.length > 0){
@@ -24,15 +24,15 @@ export default class Payment {
         this.calculateTotalOpen()
     }
 
-    public static create(guestCheckPads: GuestCheckPad[], numberOfInstallments: number = 1): Payment{
+    public static create(orders: Order[], numberOfInstallments: number = 1): Payment{
         let code = randomUUID()
-        let payment = new Payment(code, guestCheckPads)
+        let payment = new Payment(code, orders)
         payment.generateInstallments(numberOfInstallments)
         return payment
     }
 
-    public static restore(code: string, guestCheckPads: GuestCheckPad[], installments: Installment[]): Payment{
-        return new Payment(code, guestCheckPads, installments)
+    public static restore(code: string, orders: Order[], installments: Installment[]): Payment{
+        return new Payment(code, orders, installments)
     }
 
     getCode():string{
@@ -45,8 +45,8 @@ export default class Payment {
 
     private calculateTotal():void{
         this.total = 0 
-        this.guestCheckPads.forEach((guestCheckPad)=>{
-            this.total += guestCheckPad.getTotal()
+        this.orders.forEach((Order)=>{
+            this.total += Order.getTotal()
         })
     }
 
@@ -62,8 +62,8 @@ export default class Payment {
         return this.totalOpen
     }
 
-    getGuestCheckPads():GuestCheckPad[]{
-        return this.guestCheckPads
+    getOrders():Order[]{
+        return this.orders
     }
 
     getInstallments():Installment[]{

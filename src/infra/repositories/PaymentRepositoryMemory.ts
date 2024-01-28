@@ -1,7 +1,7 @@
 import Payment from "../../application/entities/Payment";
-import IPaymentGuestCheckPadRepository from "../../application/entities/interfaces/IPaymentGuestCheckPadRepository";
+import IPaymentRepository from "../../application/entities/interfaces/IPaymentRepository";
 
-export default class PaymentRepositoryInMemory implements IPaymentGuestCheckPadRepository{
+export default class PaymentRepositoryMemory implements IPaymentRepository{
     private payments: Payment[] = []
 
     save(payment: Payment): void {

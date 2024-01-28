@@ -1,14 +1,23 @@
 import IProductRepository from "../../src/application/entities/interfaces/IProductRepository"
-import ProductService from "../../src/application/modules/product/ProductService"
-import ProductRepositoryInMemory from "../../src/infra/repositories/ProductRepositoryInMemory"
+import CreateProduct from "../../src/application/modules/product/CreateProduct"
+import GetAllProducts from "../../src/application/modules/product/GetAllProducts"
+import GetProductByCode from "../../src/application/modules/product/GetProductByCode"
+import UpdateProduct from "../../src/application/modules/product/UpdateProduct"
+import ProductRepositoryInMemory from "../../src/infra/repositories/ProductRepositoryMemory"
 
 describe("testes relacionado ao produto", ()=>{
     let productRepo: IProductRepository
-    let productService: ProductService
+    let createProduct: CreateProduct
+    let getAllProduct: GetAllProducts
+    let getProductByCode: GetProductByCode
+    let updateProduct: UpdateProduct
 
     beforeEach(()=>{
         productRepo = new ProductRepositoryInMemory()
-        productService = new ProductService(productRepo)
+        createProduct = new CreateProduct(productRepo)
+        getAllProduct = new GetAllProducts(productRepo)
+        getProductByCode = new GetProductByCode(productRepo)
+        updateProduct = new UpdateProduct(productRepo)
     })
 
     it("deve permitir cadastrar produto", ()=>{
@@ -16,7 +25,7 @@ describe("testes relacionado ao produto", ()=>{
             description: "meu produto",
             price: 24
         }
-        productService.create(inputCreate)
+        createProduct.execute(inputCreate)
         expect(productRepo.getAll()[5].getCode()).toBeDefined()
         expect(productRepo.getAll()[5].getDescription()).toBe(inputCreate.description)
         expect(productRepo.getAll()[5].getPrice()).toBe(inputCreate.price)
@@ -27,20 +36,20 @@ describe("testes relacionado ao produto", ()=>{
             description: "meu produto",
             price: 24
         }
-        productService.create(inputCreate)
+        createProduct.execute(inputCreate)
         expect(productRepo.getAll()[5].getCode()).toBeDefined()
         expect(productRepo.getAll()[5].getDescription()).toBe(inputCreate.description)
         expect(productRepo.getAll()[5].getPrice()).toBe(inputCreate.price)
-        productService.update({productCode: productRepo.getAll()[5].getCode(), ...inputCreate, description:"Meu produto alterado"})
+        updateProduct.execute({code: productRepo.getAll()[5].getCode(), ...inputCreate, description:"Meu produto alterado"})
         expect(productRepo.getAll()[5].getDescription()).toBe("Meu produto alterado")
     })
 
     it("deve permitir buscar todos produtos", ()=>{
-        expect(productService.getAll().length).toBe(5)
+        expect(getAllProduct.execute().length).toBe(5)
     })
 
     it("deve permitir obter produto pelo codigo", ()=>{
-        let product = productService.getByCode("634bfc31-2806-4069-9b5b-1c6ade267f70")
+        let product = getProductByCode.execute({code: "634bfc31-2806-4069-9b5b-1c6ade267f70"})
         expect(product.code).toBe("634bfc31-2806-4069-9b5b-1c6ade267f70")
     })
 })

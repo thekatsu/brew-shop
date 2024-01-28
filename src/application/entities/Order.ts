@@ -2,23 +2,23 @@ import { randomUUID } from 'crypto'
 import Item from "./Item";
 import Payment from './Payment';
 
-export enum GUESTCHECKPAD_STATUS {
+export enum ORDER_STATUS {
     OPEN,
     CLOSE
 }
 
-export default class GuestCheckPad{
+export default class Order{
     private items: Item[] = []
     private payment?: Payment 
-    private status: GUESTCHECKPAD_STATUS = GUESTCHECKPAD_STATUS.OPEN
+    private status: ORDER_STATUS = ORDER_STATUS.OPEN
     
     private constructor(private code: string, private description: string){}
 
-    public static restore(code:string, description:string):GuestCheckPad{
-        return new GuestCheckPad(code, description)
+    public static restore(code:string, description:string):Order{
+        return new Order(code, description)
     }
 
-    public static create(description?:string):GuestCheckPad{
+    public static create(description?:string):Order{
         let code = randomUUID()
         if(!description) description = code
         return this.restore(code, description)
@@ -28,14 +28,14 @@ export default class GuestCheckPad{
         return this.code
     }
 
-    getStatus():GUESTCHECKPAD_STATUS{
+    getStatus():ORDER_STATUS{
         return this.status
     }
 
     setPayment(payment: Payment):void{
-        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
         this.payment = payment
-        this.status = GUESTCHECKPAD_STATUS.CLOSE
+        this.status = ORDER_STATUS.CLOSE
     }
 
     getPayment():Payment | undefined {
@@ -59,26 +59,26 @@ export default class GuestCheckPad{
     }
 
     addItem(productCode: string, price: number, quantity: number = 1): void{
-        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
         const sequence = this.items.filter((item)=>item.getProductCode() === productCode).length + 1
         let item = Item.create(this.getCode(), productCode, sequence, quantity, price)
         this.items.push(item)
     }
 
     increaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
-        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
         const item = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
         if(!item) throw new Error("O produto não esta na comanda!")
         if(item) item.quantityUp(step)
     }
 
     decreaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
-        if(this.status !== GUESTCHECKPAD_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
-        const itemInGuestCheckPad = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
-        if(!itemInGuestCheckPad) throw new Error("O produto não esta na comanda!")
-        itemInGuestCheckPad.quantityDown(step)
-        if(itemInGuestCheckPad.getQuantity() === 0)
-            this.items = this.items.filter((item) => item !== itemInGuestCheckPad)
+        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+        const itemOrder = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
+        if(!itemOrder) throw new Error("O produto não esta na comanda!")
+        itemOrder.quantityDown(step)
+        if(itemOrder.getQuantity() === 0)
+            this.items = this.items.filter((item) => item !== itemOrder)
     }
 
     getItemsByProductCode(productCode: string): Item[]{

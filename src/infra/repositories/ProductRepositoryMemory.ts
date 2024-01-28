@@ -1,7 +1,7 @@
 import Product from "../../application/entities/Product";
 import IProductRepository from "../../application/entities/interfaces/IProductRepository";
 
-export default class ProductRepositoryInMemory implements IProductRepository{
+export default class ProductRepositoryMemory implements IProductRepository{
     private products: Product[] = [
         Product.restore("e852f5a4-c688-4383-8663-1d4cda236075", "A", 12),
         Product.restore("c0f546c6-5107-4f1d-b8af-213fb8b0ff81", "B", 4),
