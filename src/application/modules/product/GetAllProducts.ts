@@ -12,7 +12,6 @@ export default class GetAllProducts{
                 price: value.getPrice()
             }
         })
-    
     }
 }
 
