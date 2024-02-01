@@ -4,23 +4,23 @@ import IOrderRepository from "../../interfaces/IOrderRepository"
 import IInvoiceRepository from "../../interfaces/IInvoiceRepository"
 
 export default class CreateInvoice {
-    constructor(private paymentRepository: IInvoiceRepository, private orderRepository: IOrderRepository){}
+    constructor(private invoiceRepository: IInvoiceRepository, private orderRepository: IOrderRepository){}
     
-    execute({orderCodes, numberOfPayments = 1}: Input ):void {
+    execute({orderCodes, numberOfInstallments = 1}: Input ):void {
         let orders: Order[] = []
         for(const code of orderCodes){
             orders.push(this.orderRepository.getByCode(code))
         }
-        const payment = Invoice.create(orders, numberOfPayments)
+        const invoice = Invoice.create(orders, numberOfInstallments)
         for(const order of orders){
-            order.setInvoice(payment)
+            order.setInvoice(invoice)
             this.orderRepository.save(order)
         }
-        this.paymentRepository.save(payment)
+        this.invoiceRepository.save(invoice)
     }
 }
 
 export type Input = {
     orderCodes: string[],
-    numberOfPayments?: number
+    numberOfInstallments?: number
 }

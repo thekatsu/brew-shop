@@ -9,7 +9,7 @@ export enum ORDER_STATUS {
 
 export default class Order{
     private items: Item[] = []
-    private payment?: Invoice 
+    private invoice?: Invoice 
     private status: ORDER_STATUS = ORDER_STATUS.OPEN
     
     private constructor(private code: string, private description: string){}
@@ -32,14 +32,14 @@ export default class Order{
         return this.status
     }
 
-    setInvoice(payment: Invoice):void{
+    setInvoice(invoice: Invoice):void{
         if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
-        this.payment = payment
+        this.invoice = invoice
         this.status = ORDER_STATUS.CLOSE
     }
 
     getInvoice():Invoice | undefined {
-        return this.payment
+        return this.invoice
     }
 
     getDescription():string {

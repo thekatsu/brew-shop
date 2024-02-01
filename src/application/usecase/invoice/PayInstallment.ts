@@ -1,16 +1,16 @@
 import IInvoiceRepository from "../../interfaces/IInvoiceRepository"
 
-export default class AlterPayment {
+export default class payInstallment {
     constructor(private invoiceRepository: IInvoiceRepository){}
     
-    execute({invoiceCode, paymentNo, value}: Input){
+    execute({invoiceCode, paymentNo}: Input){
         const invoice = this.invoiceRepository.getByCode(invoiceCode)
-        invoice.alterInvoice(paymentNo, value)
+        invoice.payInstallment(paymentNo)
         this.invoiceRepository.save(invoice)        
     }
 }
+
 export type Input = {
     invoiceCode: string,
-    paymentNo: number,
-    value: number
+    paymentNo: number
 }

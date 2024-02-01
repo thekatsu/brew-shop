@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import Order from "./Order";
-import Payment, { PAYMENT_STATUS } from "./Payment";
+import Installment, { INSTALLMENT_STATUS } from './Installment';
 
 export enum INVOICE_STATUS {
     OPEN,
@@ -13,26 +13,26 @@ export default class Invoice {
     private totalOpen: number = 0
     private status: INVOICE_STATUS
     
-    private constructor(private code: string, private orders: Order[], private payments: Payment[] = []){
+    private constructor(private code: string, private orders: Order[], private installments: Installment[] = []){
         this.status = INVOICE_STATUS.OPEN
         this.calculateTotal()
-        if(payments.length > 0){
-            this.setPayments(payments)
+        if(installments.length > 0){
+            this.setInstallments(installments)
         } else {
-            this.generatePayments(1)
+            this.generateInstallments(1)
         }
         this.calculateTotalOpen()
     }
 
-    public static create(orders: Order[], numberOfPayments: number = 1): Invoice{
+    public static create(orders: Order[], numberOfInstallments: number = 1): Invoice{
         let code = randomUUID()
-        let payment = new Invoice(code, orders)
-        payment.generatePayments(numberOfPayments)
-        return payment
+        let invoice = new Invoice(code, orders)
+        invoice.generateInstallments(numberOfInstallments)
+        return invoice
     }
 
-    public static restore(code: string, orders: Order[], payments: Payment[]): Invoice{
-        return new Invoice(code, orders, payments)
+    public static restore(code: string, orders: Order[], installments: Installment[]): Invoice{
+        return new Invoice(code, orders, installments)
     }
 
     getCode():string{
@@ -55,7 +55,7 @@ export default class Invoice {
     }
 
     private calculateTotalOpen():void{
-        this.totalOpen = this.total - this.getTotalPaymentsPaid()
+        this.totalOpen = this.total - this.getTotalInstallmentsPaid()
     }
 
     getTotalOpen():number{
@@ -66,48 +66,48 @@ export default class Invoice {
         return this.orders
     }
 
-    getPayments():Payment[]{
-        return this.payments
+    getInstallments():Installment[]{
+        return this.installments
     }
 
-    getTotalOutstandingPayments():number{
-        return this.payments
-            .filter((payment)=>payment.getStatus() === PAYMENT_STATUS.OPEN)
+    getTotalOutstandingInstallments():number{
+        return this.installments
+            .filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.OPEN)
             .map((payment)=>payment.getValue())
             .reduce((accumulador, current) => accumulador + current, 0)
     }
 
-    getTotalPaymentsPaid():number{
-        return this.payments
-            .filter((payment)=>payment.getStatus() === PAYMENT_STATUS.PAID)
+    getTotalInstallmentsPaid():number{
+        return this.installments
+            .filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.PAID)
             .map((payment)=>payment.getValue())
             .reduce((accumulador, current) => accumulador + current, 0)
     }
 
-    setPayments(payments: Payment[]){
-        this.payments = payments
+    setInstallments(installments: Installment[]){
+        this.installments = installments
     }
 
-    private generatePayments(numberOfPayments:number):void{
-        const baseValueOfPayment = Math.round((this.total/numberOfPayments)*100)/100
-        let sumOfPayments = 0
-        this.payments = this.payments.filter((payment)=>payment.getStatus() === PAYMENT_STATUS.PAID)
-        for(let i = 1; i <= numberOfPayments; i++ ){
-            let value = baseValueOfPayment
-            if(i === numberOfPayments){
-                if(sumOfPayments + value > this.totalOpen){
-                    value -= (sumOfPayments + value) - this.totalOpen
+    private generateInstallments(numberOfInstallments:number):void{
+        const baseValueOfInstallment = Math.round((this.total/numberOfInstallments)*100)/100
+        let sumOfInstallments = 0
+        this.installments = this.installments.filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.PAID)
+        for(let i = 1; i <= numberOfInstallments; i++ ){
+            let value = baseValueOfInstallment
+            if(i === numberOfInstallments){
+                if(sumOfInstallments + value > this.totalOpen){
+                    value -= (sumOfInstallments + value) - this.totalOpen
                 } else {
-                    value += this.totalOpen - (sumOfPayments + value)
+                    value += this.totalOpen - (sumOfInstallments + value)
                 }
             }
-            sumOfPayments +=  Math.round(value*100)/100
-            this.payments.push(new Payment(this.code, i, Math.round(value*100)/100))
+            sumOfInstallments +=  Math.round(value*100)/100
+            this.installments.push(new Installment(this.code, i, Math.round(value*100)/100))
         }
     }
 
-    payInvoice(sequence: number){
-        this.payments = this.payments
+    payInstallment(sequence: number){
+        this.installments = this.installments
             .map((payment)=>{
                 if(payment.getSequence() === sequence) {
                     payment.pay()
@@ -118,8 +118,8 @@ export default class Invoice {
         if(this.totalOpen === 0) this.status = INVOICE_STATUS.PAID
     }
 
-    alterInvoice(sequence: number, value: number){
-        this.payments = this.payments
+    alterInstallment(sequence: number, value: number){
+        this.installments = this.installments
             .map((payment)=>{
                 if(payment.getSequence() === sequence) {
                     if((this.totalOpen - payment.getValue()) + value > this.totalOpen) throw new Error("O valor excede o total em aberto!")
@@ -132,9 +132,9 @@ export default class Invoice {
 
     cancel(){
         if(this.getStatus() === INVOICE_STATUS.PAID) throw new Error("Pagamento com o status pago não pode ser cancelado!")
-        this.payments = this.payments
+        this.installments = this.installments
             .map((payment)=>{
-                if(payment.getStatus() == PAYMENT_STATUS.OPEN) payment.cancel()
+                if(payment.getStatus() == INSTALLMENT_STATUS.OPEN) payment.cancel()
                 return payment
             })
         this.status = INVOICE_STATUS.CANCELED

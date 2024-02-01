@@ -1,4 +1,4 @@
-import { PAYMENT_STATUS } from "../../../domain/entities/Payment"
+import { INSTALLMENT_STATUS } from "../../../domain/entities/Installment"
 import { INVOICE_STATUS } from "../../../domain/entities/Invoice"
 import IInvoiceRepository from "../../interfaces/IInvoiceRepository"
 
@@ -9,14 +9,14 @@ export default class GetByCode {
         const invoice = this.invoiceRepository.getByCode(invoiceCode)
         return {
             status: invoice.getStatus() === INVOICE_STATUS.OPEN ? "open": invoice.getStatus() === INVOICE_STATUS.PAID? "paid": "canceled",
-            totalOpen: invoice.getTotalOutstandingPayments(),
-            totalPaid: invoice.getTotalPaymentsPaid(),
+            totalOpen: invoice.getTotalOutstandingInstallments(),
+            totalPaid: invoice.getTotalInstallmentsPaid(),
             total: invoice.getTotal(),
             ordersCodes: invoice.getOrders().map((order) => order.getCode()),
-            payments: invoice.getPayments().map((payment)=>{
+            installments: invoice.getInstallments().map((payment)=>{
                 return {
                     sequence: payment.getSequence(),
-                    status: payment.getStatus() === PAYMENT_STATUS.OPEN ? "open": payment.getStatus() === PAYMENT_STATUS.PAID? "paid": "canceled",
+                    status: payment.getStatus() === INSTALLMENT_STATUS.OPEN ? "open": payment.getStatus() === INSTALLMENT_STATUS.PAID? "paid": "canceled",
                     value: payment.getValue()
                 }
             })
@@ -34,7 +34,7 @@ export type Output = {
     totalPaid: number
     total: number
     ordersCodes: string[]
-    payments: {
+    installments: {
         sequence: number
         status: string,
         value: number
