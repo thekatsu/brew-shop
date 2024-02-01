@@ -1,5 +1,5 @@
-import Product from "../../application/entities/Product";
-import IProductRepository from "../../application/entities/interfaces/IProductRepository";
+import IProductRepository from "../../application/interfaces/IProductRepository"
+import Product from "../../domain/entities/Product"
 
 export default class ProductRepositoryMemory implements IProductRepository{
     private products: Product[] = [

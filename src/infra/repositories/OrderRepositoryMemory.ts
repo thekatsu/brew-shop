@@ -1,6 +1,6 @@
-import Order from "../../application/entities/Order"
-import Item from "../../application/entities/Item"
-import IOrderRepository from "../../application/entities/interfaces/IOrderRepository"
+import IOrderRepository from "../../application/interfaces/IOrderRepository"
+import Item from "../../domain/entities/Item"
+import Order from "../../domain/entities/Order"
 
 export default class OrderRepositoryMemory implements IOrderRepository {
     private orders: Order[] = []

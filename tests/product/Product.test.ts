@@ -1,8 +1,8 @@
-import IProductRepository from "../../src/application/entities/interfaces/IProductRepository"
-import CreateProduct from "../../src/application/modules/product/CreateProduct"
-import GetAllProducts from "../../src/application/modules/product/GetAllProducts"
-import GetProductByCode from "../../src/application/modules/product/GetProductByCode"
-import UpdateProduct from "../../src/application/modules/product/UpdateProduct"
+import IProductRepository from "../../src/application/interfaces/IProductRepository"
+import CreateProduct from "../../src/application/usecase/product/CreateProduct"
+import GetAllProducts from "../../src/application/usecase/product/GetAllProducts"
+import GetProductByCode from "../../src/application/usecase/product/GetProductByCode"
+import UpdateProduct from "../../src/application/usecase/product/UpdateProduct"
 import ProductRepositoryInMemory from "../../src/infra/repositories/ProductRepositoryMemory"
 
 describe("testes relacionado ao produto", ()=>{

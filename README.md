@@ -10,7 +10,6 @@ Deve ser fácil navegar entre as comandas em uma única, incluir produtos e fina
 5) o comprovante de pagamento realizado pode ser enviado por algum meio(Msg, WHATSAPP, SALVAR ou EMAIL)
 6) Com a finalização da comanda, deve ser enviado ao ERP a comanda como registro de venda
 
-
 # Implementações futuras
 Gestão de débitos de clientes
 Gestão de estoque
