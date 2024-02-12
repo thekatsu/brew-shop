@@ -1,6 +1,9 @@
 import { randomUUID } from 'crypto'
 import Item from "./Item";
 import Invoice from './Invoice';
+import ItemOrderNotFound from '../errors/order/ItemOrderNotFound';
+import OrderIsClosed from '../errors/order/OrderIsClosed';
+import OrderCanNotBeOpen from '../errors/order/OrderCanNotBeOpen';
 
 export enum ORDER_STATUS {
     OPEN,
@@ -8,37 +11,66 @@ export enum ORDER_STATUS {
 }
 
 export default class Order{
-    private items: Item[] = []
-    private invoice?: Invoice 
+    private orderId: string
+    private description: string
     private status: ORDER_STATUS = ORDER_STATUS.OPEN
+    private items: Item[] = []
+    private invoice?: Invoice     
     
-    private constructor(private code: string, private description: string){}
-
-    public static restore(code:string, description:string):Order{
-        return new Order(code, description)
+    private constructor(orderId: string, description: string, items: Item[], status: ORDER_STATUS, invoice?: Invoice){
+        this.orderId = orderId
+        this.description = description
+        this.items = items
+        this.invoice = invoice
+        this.status = status
     }
 
-    public static create(description?:string):Order{
-        let code = randomUUID()
-        if(!description) description = code
-        return this.restore(code, description)
+    public static restore(orderId: string, description: string, items: Item[], status: ORDER_STATUS, invoice?: Invoice):Order{
+        return new Order(orderId, description, items, status, invoice)
+    }
+
+    public static new(description?:string):Order{
+        let orderId = randomUUID()
+        if(!description) description = `Order: ${orderId}`
+        return new Order(orderId, description, [], ORDER_STATUS.OPEN)
     }
     
-    getCode(): string{
-        return this.code
+    getOrderId():string{
+        return this.orderId
     }
 
     getStatus():ORDER_STATUS{
         return this.status
     }
 
-    setInvoice(invoice: Invoice):void{
-        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
+    private canClose(){
+        return this.getStatus() == ORDER_STATUS.OPEN
+    }
+
+    close(invoice:Invoice):void{
+        if(!this.canClose()) throw new OrderIsClosed()
         this.invoice = invoice
+        this.invoice.addOrders([this])
         this.status = ORDER_STATUS.CLOSE
     }
 
-    getInvoice():Invoice | undefined {
+    private detachInvoice(){
+        if(!this.invoice) throw new Error("Sem fatura para ser desanexada!")
+        this.invoice.removeOrders([this])
+        this.invoice = undefined
+    }
+
+    isOpen(){
+        return this.status === ORDER_STATUS.OPEN
+    }
+    
+    open():void{
+        if(this.isOpen()) throw new OrderCanNotBeOpen()
+        this.detachInvoice()
+        this.status = ORDER_STATUS.OPEN
+    }
+
+    getInvoice():Invoice | undefined{
         return this.invoice
     }
 
@@ -47,41 +79,37 @@ export default class Order{
     }
 
     getTotal():number {
-        let total = 0
-        for(const item of this.items){
-            total += item.getTotal()
-        }
-        return total
+        return this.items.reduce((total, curr)=> total + curr.getTotal(), 0)
     }
 
     getItems():Item[] {
-        return this.items
+        return this.items.map(value => value)
     }
 
-    addItem(productCode: string, price: number, quantity: number = 1): void{
-        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
-        const sequence = this.items.filter((item)=>item.getProductCode() === productCode).length + 1
-        let item = Item.create(this.getCode(), productCode, sequence, quantity, price)
-        this.items.push(item)
+    addItem(productId:string, value:number){
+        if(!this.isOpen()) throw new OrderIsClosed("itens não podem ser adicionados")
+        this.items.push(Item.create(productId, value))
     }
 
-    increaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
-        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
-        const item = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
-        if(!item) throw new Error("O produto não esta na comanda!")
-        if(item) item.quantityUp(step)
+    removeItem(productId:string){
+        if(!this.isOpen()) throw new OrderIsClosed("não pode ter items removidos")
+        this.items = this.items.filter((item) => item.getProductId() !== productId)
     }
 
-    decreaseAmount(productCode: string, sequence:number = 1, step:number = 1):void {
-        if(this.status !== ORDER_STATUS.OPEN) throw new Error("Comanda já esta encerada!")
-        const itemOrder = this.items.find((item)=>item.getProductCode() === productCode && item.getSequence() === sequence)
-        if(!itemOrder) throw new Error("O produto não esta na comanda!")
-        itemOrder.quantityDown(step)
-        if(itemOrder.getQuantity() === 0)
-            this.items = this.items.filter((item) => item !== itemOrder)
+    increaseItemQuantity(productId: string, quantity: number = 1):void{
+        if(!this.isOpen()) throw new OrderIsClosed("não pode ser modificada")
+        const item = this.items.find((value) => value.getProductId() === productId)
+        if(!item) throw new ItemOrderNotFound()
+        item.quantityUp(quantity)
     }
 
-    getItemsByProductCode(productCode: string): Item[]{
-        return this.items.filter((item)=>item.getProductCode() === productCode)
+    decreaseItemQuantity(productId: string, quantity:number = 1):void {
+        if(!this.isOpen()) throw new OrderIsClosed("não pode ser modificada")
+        const item = this.items.find((item)=>item.getProductId() === productId)
+        if(!item) throw new ItemOrderNotFound()
+        item.quantityDown(quantity)
+        if(item.getQuantity() === 0){
+            this.items = this.items.filter((item) => item.getProductId() === productId)
+        }
     }
 }

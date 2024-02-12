@@ -10,10 +10,12 @@ import CreateOrder from "../../src/application/usecase/order/CreateOrder"
 import IncreaseQuantityProduct from "../../src/application/usecase/order/IncreaseQuantityProduct"
 import { INVOICE_STATUS } from "../../src/domain/entities/Invoice"
 import { ORDER_STATUS } from "../../src/domain/entities/Order"
-import { INSTALLMENT_STATUS } from "../../src/domain/entities/Installment"
+import { INSTALLMENT_STATUS } from "../../src/domain/entities/Transaction"
 import InvoiceRepositoryMemory from "../../src/infra/repositories/InvoiceRepositoryMemory"
 import OrderRepositoryInMemory from "../../src/infra/repositories/OrderRepositoryMemory"
 import ProductRepositoryMemory from "../../src/infra/repositories/ProductRepositoryMemory"
+import AddOrderInvoice from "../../src/application/usecase/invoice/AddOrderInvoice"
+import RemoveOrderInvoice from "../../src/application/usecase/invoice/RemoveOrderInvoice"
 
 describe("Teste de pagamentos de comanda", ()=>{
     let orderRepo: IOrderRepository
@@ -22,6 +24,8 @@ describe("Teste de pagamentos de comanda", ()=>{
     let createOrder: CreateOrder
     let addProduct: IncreaseQuantityProduct
     let createInvoice: CreateInvoice
+    let addOrderInvoice: AddOrderInvoice
+    let removeOrderInvoice: RemoveOrderInvoice
     let getInvoiceByCode: GetInvoiceByCode
     let alterPayment: AlterPayment
     let cancelInvoice: CancelInvoice
@@ -34,6 +38,8 @@ describe("Teste de pagamentos de comanda", ()=>{
         createOrder = new CreateOrder(orderRepo, productRepo)
         addProduct = new IncreaseQuantityProduct(orderRepo, productRepo)
         createInvoice = new CreateInvoice(invoiceRepo, orderRepo)
+        addOrderInvoice = new AddOrderInvoice(invoiceRepo, orderRepo)
+        removeOrderInvoice = new RemoveOrderInvoice(invoiceRepo, orderRepo)
         getInvoiceByCode = new GetInvoiceByCode(invoiceRepo)
         alterPayment = new AlterPayment(invoiceRepo)
         cancelInvoice = new CancelInvoice(invoiceRepo)
@@ -198,5 +204,37 @@ describe("Teste de pagamentos de comanda", ()=>{
         }
         cancelInvoice.execute(InputCancelPayment)
         expect(invoiceRepo.getAll()[0].getStatus()).toBe(INVOICE_STATUS.CANCELED)
+    })
+
+    it("deve adicionar novas comandas a fatura", ()=>{
+        const inputCreate = {
+            orderCodes: [orderRepo.getAll()[0].getCode()]
+        }
+        createInvoice.execute(inputCreate)
+        const inputAddOrder = {
+            invoiceCode: invoiceRepo.getAll()[0].getCode(),
+            orderCodes: [orderRepo.getAll()[1].getCode()]
+        }
+        addOrderInvoice.execute(inputAddOrder)
+        expect(invoiceRepo.getAll()[0].getTotal()).toBe(16)
+    })
+
+    it("deve remover comandas da fatura", ()=>{
+        const inputCreate = {
+            orderCodes: [orderRepo.getAll()[0].getCode()]
+        }
+        createInvoice.execute(inputCreate)
+        const inputAddOrder = {
+            invoiceCode: invoiceRepo.getAll()[0].getCode(),
+            orderCodes: [orderRepo.getAll()[1].getCode()]
+        }
+        addOrderInvoice.execute(inputAddOrder)
+        const inputRmvOrder = {
+            invoiceCode: invoiceRepo.getAll()[0].getCode(),
+            orderCodes: [orderRepo.getAll()[0].getCode()]
+        }
+        removeOrderInvoice.execute(inputRmvOrder)
+        // console.log(invoiceRepo.getAll())
+        expect(invoiceRepo.getAll()[0].getTotal()).toBe(4)
     })
 })

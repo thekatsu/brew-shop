@@ -1,142 +1,121 @@
 import { randomUUID } from 'crypto'
 import Order from "./Order";
-import Installment, { INSTALLMENT_STATUS } from './Installment';
+import Transaction, { TRANSACTION_TYPE, TransactionIncoming, TransactionIncomingReversal } from './Transaction';
 
 export enum INVOICE_STATUS {
     OPEN,
     PAID,
-    CANCELED
+    CANCELED,
+    REVERSED
 }
 
 export default class Invoice {
-    private total: number = 0
-    private totalOpen: number = 0
+    private invoiceId: string
+    private orders: Order[]
+    private payments: Transaction[]
     private status: INVOICE_STATUS
     
-    private constructor(private code: string, private orders: Order[], private installments: Installment[] = []){
-        this.status = INVOICE_STATUS.OPEN
-        this.calculateTotal()
-        if(installments.length > 0){
-            this.setInstallments(installments)
-        } else {
-            this.generateInstallments(1)
-        }
-        this.calculateTotalOpen()
+    private constructor(invoiceId: string, status: INVOICE_STATUS, orders: Order[], payments: Transaction[] = []){
+        this.invoiceId = invoiceId
+        orders.forEach((order)=>{
+            order.close(this)
+        })
+        this.orders = orders
+        this.payments = payments
+        this.status = status
+    }
+    
+    public static restore(invoiceId:string, status: INVOICE_STATUS, orders: Order[], payments: Transaction[]): Invoice{
+        return new Invoice(invoiceId, status, orders, payments)
     }
 
-    public static create(orders: Order[], numberOfInstallments: number = 1): Invoice{
-        let code = randomUUID()
-        let invoice = new Invoice(code, orders)
-        invoice.generateInstallments(numberOfInstallments)
-        return invoice
+    public static create(orders: Order[]): Invoice{
+        const invoiceId = randomUUID()
+        return new Invoice(invoiceId, INVOICE_STATUS.OPEN, orders)
     }
 
-    public static restore(code: string, orders: Order[], installments: Installment[]): Invoice{
-        return new Invoice(code, orders, installments)
-    }
-
-    getCode():string{
-        return this.code
+    getInvoiceId():string{
+        return this.invoiceId
     }
 
     getStatus():INVOICE_STATUS{
         return this.status
     }
 
-    private calculateTotal():void{
-        this.total = 0 
-        this.orders.forEach((Order)=>{
-            this.total += Order.getTotal()
-        })
-    }
-
     getTotal():number{
-        return this.total
-    }
-
-    private calculateTotalOpen():void{
-        this.totalOpen = this.total - this.getTotalInstallmentsPaid()
+        return this.orders.reduce((accu, curr)=> accu + curr.getTotal(), 0)
     }
 
     getTotalOpen():number{
-        return this.totalOpen
+        return this.getTotal() - this.getTotalPayments()
     }
 
     getOrders():Order[]{
-        return this.orders
+        return this.orders.map(order => order)
     }
 
-    getInstallments():Installment[]{
-        return this.installments
+    getPayments():Transaction[]{
+        return this.payments.map(payment => payment)
     }
 
-    getTotalOutstandingInstallments():number{
-        return this.installments
-            .filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.OPEN)
-            .map((payment)=>payment.getValue())
-            .reduce((accumulador, current) => accumulador + current, 0)
+    getTotalPayments():number{
+        return this.payments
+            .reduce((accu, curr) => accu + curr.getValue(), 0)
     }
 
-    getTotalInstallmentsPaid():number{
-        return this.installments
-            .filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.PAID)
-            .map((payment)=>payment.getValue())
-            .reduce((accumulador, current) => accumulador + current, 0)
+    pay(value:number){
+        this.payments.push(new TransactionIncoming(value))
     }
 
-    setInstallments(installments: Installment[]){
-        this.installments = installments
-    }
-
-    private generateInstallments(numberOfInstallments:number):void{
-        const baseValueOfInstallment = Math.round((this.total/numberOfInstallments)*100)/100
-        let sumOfInstallments = 0
-        this.installments = this.installments.filter((payment)=>payment.getStatus() === INSTALLMENT_STATUS.PAID)
-        for(let i = 1; i <= numberOfInstallments; i++ ){
-            let value = baseValueOfInstallment
-            if(i === numberOfInstallments){
-                if(sumOfInstallments + value > this.totalOpen){
-                    value -= (sumOfInstallments + value) - this.totalOpen
-                } else {
-                    value += this.totalOpen - (sumOfInstallments + value)
-                }
-            }
-            sumOfInstallments +=  Math.round(value*100)/100
-            this.installments.push(new Installment(this.code, i, Math.round(value*100)/100))
-        }
-    }
-
-    payInstallment(sequence: number){
-        this.installments = this.installments
-            .map((payment)=>{
-                if(payment.getSequence() === sequence) {
-                    payment.pay()
-                }
-                return payment
-            })
-        this.calculateTotalOpen()
-        if(this.totalOpen === 0) this.status = INVOICE_STATUS.PAID
-    }
-
-    alterInstallment(sequence: number, value: number){
-        this.installments = this.installments
-            .map((payment)=>{
-                if(payment.getSequence() === sequence) {
-                    if((this.totalOpen - payment.getValue()) + value > this.totalOpen) throw new Error("O valor excede o total em aberto!")
-                    payment.setValue(value)
-                }
-                return payment
-            })
-        this.calculateTotalOpen()
+    reversePayment(value:number){
+        this.payments.push(new TransactionIncomingReversal(value))
     }
 
     cancel(){
-        if(this.getStatus() === INVOICE_STATUS.PAID) throw new Error("Pagamento com o status pago não pode ser cancelado!")
-        this.installments = this.installments
-            .map((payment)=>{
-                if(payment.getStatus() == INSTALLMENT_STATUS.OPEN) payment.cancel()
-                return payment
-            })
+        if(this.getTotalOpen() > 0) this.payments.push(new TransactionIncomingReversal(this.getTotalOpen()))
+        this.orders.forEach(order => order.open())
         this.status = INVOICE_STATUS.CANCELED
+    }
+
+    addOrders(orders: Order[]){
+        orders.forEach((newOrder)=>{
+            const hasOrder = this.orders.some((invoiceOrder)=>{invoiceOrder.getOrderId() === newOrder.getOrderId()})
+            if(!hasOrder) this.orders.push(newOrder)
+        })
+    }
+
+    removeOrders(orders: Order[]){
+        orders.forEach((orderToRemove)=>{
+            if(orderToRemove.getTotal() <= this.getTotalOpen()){
+                this.orders = this.orders
+                    .map((order)=>{
+                        if(order.getOrderId() === orderToRemove.getOrderId()) order.open()
+                        return order
+                    })
+                    .filter((order)=>{
+                        order.getOrderId() !== orderToRemove.getOrderId()
+                    })
+            }
+        })
+    }
+
+    simulateInstallments(numberOfInstallments:number):Transaction[]{
+        const baseValueOfInstallment = Math.round((this.getTotalOpen()/numberOfInstallments)*100)/100
+        const totalOpen = this.getTotalOpen()
+        const installments = []
+        let sumOfInstallments = 0
+        for(let i = 1; i <= numberOfInstallments; i++ ){
+            let value = baseValueOfInstallment
+            if(i === numberOfInstallments){
+                if(sumOfInstallments + value > totalOpen){
+                    value -= (sumOfInstallments + value) - totalOpen
+                } else {
+                    value += totalOpen - (sumOfInstallments + value)
+                }
+            }
+            sumOfInstallments +=  Math.round(value*100)/100
+            installments.push(new TransactionIncoming(Math.round(value*100)/100))
+        }
+        return installments
     }
 }

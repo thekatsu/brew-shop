@@ -1,4 +1,4 @@
-import { INSTALLMENT_STATUS } from "../../../domain/entities/Installment"
+import { INSTALLMENT_STATUS } from "../../../domain/entities/Transaction"
 import { INVOICE_STATUS } from "../../../domain/entities/Invoice"
 import IInvoiceRepository from "../../interfaces/IInvoiceRepository"
 

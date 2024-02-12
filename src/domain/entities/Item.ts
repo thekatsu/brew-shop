@@ -1,42 +1,36 @@
 export default class Item{
-    private constructor(
-        private orderCode: string,
-        private productCode: string, 
-        private sequence: number,
-        private quantity: number, 
-        private price: number
-    ){}
+    private productId:string
+    private quantity:number
+    private value:number
 
-    public static create(orderCode:string, productCode:string, sequence:number, quantity:number, price:number){
-        return this.restore(orderCode, productCode, sequence, quantity, price)
+    private constructor(productId:string, quantity:number, value:number){
+        this.productId = productId
+        this.quantity = quantity
+        this.value = value
     }
 
-    public static restore(orderCode:string, productCode:string, sequence:number, quantity:number, price:number){
-        return new Item(orderCode, productCode, sequence, quantity, price)
+    public static create(productId:string, value:number){
+        return new Item(productId, 1, value)
     }
 
-    getOrderCode(){
-        return this.orderCode
-    }
-    
-    getProductCode():string {
-        return this.productCode
+    public static restore(productId:string, quantity:number, value:number){
+        return new Item(productId, quantity, value)
     }
 
-    getSequence():number {
-        return this.sequence
+    getProductId():string {
+        return this.productId
     }
 
     getQuantity():number {
         return this.quantity
     }
 
-    getPrice():number {
-        return this.price
+    getValue():number {
+        return this.value
     }
 
     getTotal(){
-        return this.price * this.quantity
+        return this.value * this.quantity
     }
 
     quantityUp(step: number = 1){
@@ -45,5 +39,6 @@ export default class Item{
 
     quantityDown(step: number = 1){
         this.quantity -= step;
+        if(this.quantity <= 0) this.quantity = 0 
     }
 }
