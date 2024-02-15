@@ -1,4 +1,4 @@
-import IProductRepository from "../../application/interfaces/IProductRepository"
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 import Product from "../../domain/entities/Product"
 
 export default class ProductRepositoryMemory implements IProductRepository{
@@ -22,8 +22,8 @@ export default class ProductRepositoryMemory implements IProductRepository{
         return this.products
     }
 
-    getByCode(code: string): Product {
-        const product = this.products.find((product)=>product.getCode() === code)
+    getById(code: string): Product {
+        const product = this.products.find((product)=>product.getId() === code)
         if(!product) throw new Error("Produto não encontrado!")
         return product
     }

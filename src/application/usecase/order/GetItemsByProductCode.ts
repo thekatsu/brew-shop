@@ -1,5 +1,5 @@
-import IOrderRepository from "../../interfaces/IOrderRepository";
-import IProductRepository from "../../interfaces/IProductRepository";
+import IOrderRepository from "../../domain/interfaces/IOrderRepository"
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class getItemsByProductCode {
 
@@ -10,14 +10,13 @@ export default class getItemsByProductCode {
 
     execute(input: Input): Output[]{
         return this.orderRepository
-            .getItemsByProductCode(input.orderCode, input.productCode)
+            .getItemsByProductId(input.orderCode, input.productCode)
             .map((item)=>{
                 return {
-                    productCode: item.getProductCode(), 
-                    description: this.productRepository.getByCode(item.getProductCode()).getDescription(),
-                    sequence: item.getSequence(), 
+                    productCode: item.getProductId(), 
+                    description: this.productRepository.getById(item.getProductId()).getDescription(),
                     quantity: item.getQuantity(), 
-                    price: item.getPrice(),
+                    value: item.getValue(),
                     total: item.getTotal()
                 }
             })
@@ -32,8 +31,7 @@ export type Input = {
 export type Output = {
     productCode:string
     description:string
-    sequence:number
     quantity:number
-    price:number
+    value:number
     total:number
 }

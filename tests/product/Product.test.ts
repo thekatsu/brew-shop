@@ -1,9 +1,9 @@
-import IProductRepository from "../../src/application/interfaces/IProductRepository"
+import IProductRepository from "../../src/application/domain/interfaces/IProductRepository"
+import ProductRepositoryInMemory from "../../src/application/infra/repositories/ProductRepositoryMemory"
 import CreateProduct from "../../src/application/usecase/product/CreateProduct"
 import GetAllProducts from "../../src/application/usecase/product/GetAllProducts"
 import GetProductByCode from "../../src/application/usecase/product/GetProductByCode"
 import UpdateProduct from "../../src/application/usecase/product/UpdateProduct"
-import ProductRepositoryInMemory from "../../src/infra/repositories/ProductRepositoryMemory"
 
 describe("testes relacionado ao produto", ()=>{
     let productRepo: IProductRepository
@@ -26,7 +26,7 @@ describe("testes relacionado ao produto", ()=>{
             price: 24
         }
         createProduct.execute(inputCreate)
-        expect(productRepo.getAll()[5].getCode()).toBeDefined()
+        expect(productRepo.getAll()[5].getId()).toBeDefined()
         expect(productRepo.getAll()[5].getDescription()).toBe(inputCreate.description)
         expect(productRepo.getAll()[5].getPrice()).toBe(inputCreate.price)
     })
@@ -37,10 +37,10 @@ describe("testes relacionado ao produto", ()=>{
             price: 24
         }
         createProduct.execute(inputCreate)
-        expect(productRepo.getAll()[5].getCode()).toBeDefined()
+        expect(productRepo.getAll()[5].getId()).toBeDefined()
         expect(productRepo.getAll()[5].getDescription()).toBe(inputCreate.description)
         expect(productRepo.getAll()[5].getPrice()).toBe(inputCreate.price)
-        updateProduct.execute({code: productRepo.getAll()[5].getCode(), ...inputCreate, description:"Meu produto alterado"})
+        updateProduct.execute({code: productRepo.getAll()[5].getId(), ...inputCreate, description:"Meu produto alterado"})
         expect(productRepo.getAll()[5].getDescription()).toBe("Meu produto alterado")
     })
 

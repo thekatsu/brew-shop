@@ -11,7 +11,7 @@ export enum INVOICE_STATUS {
 
 export default class Invoice {
     private invoiceId: string
-    private orders: Order[]
+    private orders: Order[] = []
     private payments: Transaction[]
     private status: INVOICE_STATUS
     
@@ -34,7 +34,7 @@ export default class Invoice {
         return new Invoice(invoiceId, INVOICE_STATUS.OPEN, orders)
     }
 
-    getInvoiceId():string{
+    getId():string{
         return this.invoiceId
     }
 
@@ -47,7 +47,7 @@ export default class Invoice {
     }
 
     getTotalOpen():number{
-        return this.getTotal() - this.getTotalPayments()
+        return this.getTotal() - this.getTotalPaid()
     }
 
     getOrders():Order[]{
@@ -58,7 +58,7 @@ export default class Invoice {
         return this.payments.map(payment => payment)
     }
 
-    getTotalPayments():number{
+    getTotalPaid():number{
         return this.payments
             .reduce((accu, curr) => accu + curr.getValue(), 0)
     }
@@ -79,8 +79,11 @@ export default class Invoice {
 
     addOrders(orders: Order[]){
         orders.forEach((newOrder)=>{
-            const hasOrder = this.orders.some((invoiceOrder)=>{invoiceOrder.getOrderId() === newOrder.getOrderId()})
-            if(!hasOrder) this.orders.push(newOrder)
+            const hasOrder = this.orders.some((invoiceOrder)=>{invoiceOrder.getId() === newOrder.getId()})
+            if(!hasOrder) {
+                newOrder.close(this)
+                this.orders.push(newOrder)
+            }
         })
     }
 
@@ -89,12 +92,10 @@ export default class Invoice {
             if(orderToRemove.getTotal() <= this.getTotalOpen()){
                 this.orders = this.orders
                     .map((order)=>{
-                        if(order.getOrderId() === orderToRemove.getOrderId()) order.open()
+                        if(order.getId() === orderToRemove.getId()) order.open()
                         return order
                     })
-                    .filter((order)=>{
-                        order.getOrderId() !== orderToRemove.getOrderId()
-                    })
+                    .filter((order)=> order.getId() !== orderToRemove.getId())
             }
         })
     }

@@ -29,13 +29,13 @@ export default class Order{
         return new Order(orderId, description, items, status, invoice)
     }
 
-    public static new(description?:string):Order{
+    public static create(description?:string):Order{
         let orderId = randomUUID()
         if(!description) description = `Order: ${orderId}`
         return new Order(orderId, description, [], ORDER_STATUS.OPEN)
     }
     
-    getOrderId():string{
+    getId():string{
         return this.orderId
     }
 
@@ -48,15 +48,15 @@ export default class Order{
     }
 
     close(invoice:Invoice):void{
-        if(!this.canClose()) throw new OrderIsClosed()
+        if(!this.canClose()) throw new OrderIsClosed(this.orderId)
         this.invoice = invoice
-        this.invoice.addOrders([this])
+        //this.invoice.addOrders([this])
         this.status = ORDER_STATUS.CLOSE
     }
 
     private detachInvoice(){
         if(!this.invoice) throw new Error("Sem fatura para ser desanexada!")
-        this.invoice.removeOrders([this])
+        //this.invoice.removeOrders([this])
         this.invoice = undefined
     }
 
@@ -86,9 +86,9 @@ export default class Order{
         return this.items.map(value => value)
     }
 
-    addItem(productId:string, value:number){
+    addItem(productId:string, quantity:number, value:number){
         if(!this.isOpen()) throw new OrderIsClosed("itens não podem ser adicionados")
-        this.items.push(Item.create(productId, value))
+        this.items.push(Item.create(productId, quantity, value))
     }
 
     removeItem(productId:string){
@@ -109,7 +109,7 @@ export default class Order{
         if(!item) throw new ItemOrderNotFound()
         item.quantityDown(quantity)
         if(item.getQuantity() === 0){
-            this.items = this.items.filter((item) => item.getProductId() === productId)
+            this.removeItem(item.getProductId())
         }
     }
 }

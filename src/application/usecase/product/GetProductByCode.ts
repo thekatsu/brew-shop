@@ -1,14 +1,14 @@
-import IProductRepository from "../../interfaces/IProductRepository";
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class GetProductByCode{
     constructor(private productRepository: IProductRepository){}
 
     execute({code}:Input):Output{
         let products = this.productRepository.getAll()
-        let product = products.find((product)=>product.getCode() === code)
+        let product = products.find((product)=>product.getId() === code)
         if(!product) throw new Error("Produto não encontrado")
         return {
-            code: product.getCode(),
+            code: product.getId(),
             description: product.getDescription(),
             price: product.getPrice()
         }

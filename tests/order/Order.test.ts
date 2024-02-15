@@ -1,13 +1,13 @@
-import IOrderRepository from "../../src/application/interfaces/IOrderRepository"
-import IProductRepository from "../../src/application/interfaces/IProductRepository"
+import IOrderRepository from "../../src/application/domain/interfaces/IOrderRepository"
+import IProductRepository from "../../src/application/domain/interfaces/IProductRepository"
+import { ORDER_STATUS } from "../../src/application/domain/entities/Order"
+import OrderRepositoryMemory from "../../src/application/infra/repositories/OrderRepositoryMemory"
+import ProductRepositoryInMemory from "../../src/application/infra/repositories/ProductRepositoryMemory"
 import CreateOrder from "../../src/application/usecase/order/CreateOrder"
 import DecreaseQuantityProduct from "../../src/application/usecase/order/DecreaseQuantityProduct"
 import GetItemsByProductCode from "../../src/application/usecase/order/GetItemsByProductCode"
 import GetOrderByCode from "../../src/application/usecase/order/GetOrderByCode"
 import IncreaseQuantityProduct from "../../src/application/usecase/order/IncreaseQuantityProduct"
-import { ORDER_STATUS } from "../../src/domain/entities/Order"
-import OrderRepositoryMemory from "../../src/infra/repositories/OrderRepositoryMemory"
-import ProductRepositoryInMemory from "../../src/infra/repositories/ProductRepositoryMemory"
 
 describe("Testes do Order", ()=>{
     let orderRepo: IOrderRepository
@@ -33,7 +33,7 @@ describe("Testes do Order", ()=>{
             description: "Minha primeira comanda"
         }
         new CreateOrder(orderRepo, productRepo).execute(input)
-        const orderCode = orderRepo.getAll()[0].getCode()
+        const orderCode = orderRepo.getAll()[0].getId()
         let inputProduct = {
             orderCode: orderCode,
             productCode: '634bfc31-2806-4069-9b5b-1c6ade267f70'
@@ -45,7 +45,7 @@ describe("Testes do Order", ()=>{
 
     it("cria uma comanda sem descrição", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
-        expect(orderRepo.getAll()[0].getDescription()).toBe(orderRepo.getAll()[0].getCode())
+        expect(orderRepo.getAll()[0].getDescription()).toBe(`Order: ${orderRepo.getAll()[0].getId()}`)
     })
 
     it("retorna erro ao tentar inserir um produto existente a uma comanda inexistente", ()=>{
@@ -59,7 +59,7 @@ describe("Testes do Order", ()=>{
     it("retorna erro ao tentar inserir um produto inexistente a uma comanda existente", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
         let input = {
-            orderCode: orderRepo.getAll()[0].getCode(),
+            orderCode: orderRepo.getAll()[0].getId(),
             productCode: '30766e56'
         }
         expect(() => new IncreaseQuantityProduct(orderRepo, productRepo).execute(input)).toThrow("Produto não encontrado!")
@@ -69,11 +69,11 @@ describe("Testes do Order", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
         const order = orderRepo.getAll()[0]
         let input = {
-            orderCode: order.getCode(),
+            orderCode: order.getId(),
             productCode: '634bfc31-2806-4069-9b5b-1c6ade267f70'
         }
         new IncreaseQuantityProduct(orderRepo, productRepo).execute(input)
-        const items = new GetItemsByProductCode(orderRepo, productRepo).execute({orderCode: order.getCode(), productCode: input.productCode})
+        const items = new GetItemsByProductCode(orderRepo, productRepo).execute({orderCode: order.getId(), productCode: input.productCode})
         expect(items[0].productCode).toBe(input.productCode)
         expect(order.getTotal()).toBe(72)
     })
@@ -82,14 +82,14 @@ describe("Testes do Order", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
         const order = orderRepo.getAll()[0]
         let input = {
-            orderCode: order.getCode(),
+            orderCode: order.getId(),
             productCode: '634bfc31-2806-4069-9b5b-1c6ade267f70',
             quantity: 10
         }
         new IncreaseQuantityProduct(orderRepo, productRepo).execute(input)
-        const items = new GetItemsByProductCode(orderRepo, productRepo).execute({orderCode: order.getCode(), productCode: input.productCode})
+        const items = new GetItemsByProductCode(orderRepo, productRepo).execute({orderCode: order.getId(), productCode: input.productCode})
         expect(items[0].quantity).toBe(10)
-        expect(items[0].price).toBe(72)
+        expect(items[0].value).toBe(72)
         expect(items[0].description).toBe("D")
         expect(items[0].total).toBe(720)
         expect(order.getTotal()).toBe(720)
@@ -97,7 +97,7 @@ describe("Testes do Order", ()=>{
 
     it("remove um produto de uma comanda", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
-        const orderCode = orderRepo.getAll()[0].getCode()
+        const orderCode = orderRepo.getAll()[0].getId()
         let input = {
             orderCode,
             productCode: '634bfc31-2806-4069-9b5b-1c6ade267f70'
@@ -110,7 +110,7 @@ describe("Testes do Order", ()=>{
 
     it("remove 5 um produto que haviam 10 unidades de uma comanda", ()=>{
         new CreateOrder(orderRepo, productRepo).execute()
-        const orderCode = orderRepo.getAll()[0].getCode()
+        const orderCode = orderRepo.getAll()[0].getId()
         let input = {
             orderCode,
             productCode: '634bfc31-2806-4069-9b5b-1c6ade267f70',

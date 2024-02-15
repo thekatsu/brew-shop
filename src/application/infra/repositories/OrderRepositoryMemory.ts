@@ -1,4 +1,4 @@
-import IOrderRepository from "../../application/interfaces/IOrderRepository"
+import IOrderRepository from "../../domain/interfaces/IOrderRepository"
 import Item from "../../domain/entities/Item"
 import Order from "../../domain/entities/Order"
 
@@ -15,8 +15,8 @@ export default class OrderRepositoryMemory implements IOrderRepository {
         }
     }
 
-    getByCode(code: string):Order {
-        const order = this.orders.find((order)=> order.getCode() === code )
+    getById(code: string):Order {
+        const order = this.orders.find((order)=> order.getId() === code )
         if(!order) throw new Error("Comanda não encontrada!")
         return order
     }
@@ -25,9 +25,9 @@ export default class OrderRepositoryMemory implements IOrderRepository {
         return this.orders
     }
 
-    getItemsByProductCode(orderCode: string, productCode: string):Item[]{
-        const order = this.getByCode(orderCode)
-        const item = order.getItemsByProductCode(productCode)
+    getItemsByProductId(orderCode: string, productCode: string):Item[]{
+        const order = this.getById(orderCode)
+        const item = order.getItems().filter(item => item.getProductId() === productCode)
         return item
     }
 }

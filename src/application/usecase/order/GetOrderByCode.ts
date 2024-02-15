@@ -1,6 +1,6 @@
-import { ORDER_STATUS } from "../../../domain/entities/Order";
-import IOrderRepository from "../../interfaces/IOrderRepository";
-import IProductRepository from "../../interfaces/IProductRepository";
+import { ORDER_STATUS } from "../../domain/entities/Order"
+import IOrderRepository from "../../domain/interfaces/IOrderRepository"
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class GetOrderByCode{
 
@@ -10,19 +10,18 @@ export default class GetOrderByCode{
     ){}
 
     execute(input: Input):Output{
-        const Order = this.orderRepository.getByCode(input.orderCode)
+        const Order = this.orderRepository.getById(input.orderCode)
         return {
-            code: Order.getCode(),
+            code: Order.getId(),
             description: Order.getDescription(),
             total: Order.getTotal(),
             status: Order.getStatus() == ORDER_STATUS.OPEN? "open": "close",
             items: Order.getItems().map((value)=>{
                 return {
-                    productCode: value.getProductCode(), 
-                    description: this.productRepository.getByCode(value.getProductCode()).getDescription(),
-                    sequence: value.getSequence(),
+                    productCode: value.getProductId(), 
+                    description: this.productRepository.getById(value.getProductId()).getDescription(),
                     quantity: value.getQuantity(),
-                    price: value.getPrice(),
+                    value: value.getValue(),
                     total: value.getTotal()
                 }
             })
@@ -42,9 +41,8 @@ export type Output = {
     items: {
         productCode: string
         description: string
-        sequence: number
         quantity: number
-        price: number
+        value: number
         total: number
     }[]
 }

@@ -3,7 +3,7 @@ import Order from "../../domain/entities/Order"
 
 export default interface IOrderRepository {
     save(order: Order): void
-    getByCode(code: string): Order
+    getById(code: string): Order
     getAll():Order[]
-    getItemsByProductCode(orderCode: string, productCode: string):Item[]
+    getItemsByProductId(orderCode: string, productCode: string):Item[]
 }

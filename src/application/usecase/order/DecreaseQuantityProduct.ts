@@ -1,5 +1,5 @@
-import IOrderRepository from "../../interfaces/IOrderRepository"
-import IProductRepository from "../../interfaces/IProductRepository"
+import IOrderRepository from "../../domain/interfaces/IOrderRepository"
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class DecreaseQuantityProduct {
 
@@ -8,10 +8,10 @@ export default class DecreaseQuantityProduct {
         readonly productRepository: IProductRepository
     ){}
 
-    execute({orderCode, productCode, quantity = 1, sequence = 1}:Input):void{
-        const order = this.orderRepository.getByCode(orderCode)
+    execute({orderCode, productCode, quantity = 1}:Input):void{
+        const order = this.orderRepository.getById(orderCode)
         if(!order) throw new Error("Comanda não encontrada!")
-        order.decreaseAmount(productCode, sequence, quantity)
+        order.decreaseItemQuantity(productCode, quantity)
         this.orderRepository.save(order)
     }
 }
@@ -20,5 +20,4 @@ export type Input = {
     orderCode: string
     productCode: string
     quantity?: number
-    sequence?: number
 }

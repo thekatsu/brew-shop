@@ -1,7 +1,6 @@
-import Invoice from "../../../domain/entities/Invoice"
-import Order from "../../../domain/entities/Order"
-import IInvoiceRepository from "../../interfaces/IInvoiceRepository"
-import IOrderRepository from "../../interfaces/IOrderRepository"
+import Order from "../../domain/entities/Order"
+import IInvoiceRepository from "../../domain/interfaces/IInvoiceRepository"
+import IOrderRepository from "../../domain/interfaces/IOrderRepository"
 
 export default class RemoveOrderInvoice {
     constructor(
@@ -10,14 +9,13 @@ export default class RemoveOrderInvoice {
     ){}
 
     execute({invoiceCode, orderCodes}: Input):void {
-        const invoice = this.invoiceRepository.getByCode(invoiceCode)
+        const invoice = this.invoiceRepository.getById(invoiceCode)
         let orders: Order[] = []
         for(const code of orderCodes){
-            orders.push(this.orderRepository.getByCode(code))
+            orders.push(this.orderRepository.getById(code))
         }
-        invoice.rmvOrders(orders)
+        invoice.removeOrders(orders)
         for(const order of orders){
-            order.removeInvoice()
             this.orderRepository.save(order)
         }
         this.invoiceRepository.save(invoice)

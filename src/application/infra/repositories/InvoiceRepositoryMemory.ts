@@ -1,4 +1,4 @@
-import IInvoiceRepository from "../../application/interfaces/IInvoiceRepository"
+import IInvoiceRepository from "../../domain/interfaces/IInvoiceRepository"
 import Invoice from "../../domain/entities/Invoice"
 
 export default class InvoiceRepositoryMemory implements IInvoiceRepository{
@@ -16,8 +16,8 @@ export default class InvoiceRepositoryMemory implements IInvoiceRepository{
         return this.payments
     }
     
-    getByCode(code: string) {
-        const invoice = this.payments.find((invoice)=>invoice.getCode() === code)
+    getById(code: string) {
+        const invoice = this.payments.find((invoice)=>invoice.getId() === code)
         if(!invoice) throw new Error("Fatura não localizada!")
         return invoice
     }

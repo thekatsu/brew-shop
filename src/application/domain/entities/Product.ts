@@ -16,7 +16,7 @@ export default class Product{
         return new Product(code, description, price)
     }
 
-    getCode():string{
+    getId():string{
         return this.code
     }
 

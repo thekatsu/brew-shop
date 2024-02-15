@@ -1,6 +1,6 @@
-import Order from "../../../domain/entities/Order";
-import IOrderRepository from "../../interfaces/IOrderRepository";
-import IProductRepository from "../../interfaces/IProductRepository";
+import Order from "../../domain/entities/Order";
+import IOrderRepository from "../../domain/interfaces/IOrderRepository";
+import IProductRepository from "../../domain/interfaces/IProductRepository";
 
 export default class CreateOrder {
 

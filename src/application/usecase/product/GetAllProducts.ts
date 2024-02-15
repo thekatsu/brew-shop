@@ -1,4 +1,4 @@
-import IProductRepository from "../../interfaces/IProductRepository";
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class GetAllProducts{
     constructor(private productRepository: IProductRepository){}
@@ -7,7 +7,7 @@ export default class GetAllProducts{
         const productsRepo = this.productRepository.getAll()
         return productsRepo.map((value) => {
             return {
-                code: value.getCode(),
+                code: value.getId(),
                 description: value.getDescription(),
                 price: value.getPrice()
             }

@@ -9,8 +9,8 @@ export default class Item{
         this.value = value
     }
 
-    public static create(productId:string, value:number){
-        return new Item(productId, 1, value)
+    public static create(productId:string, quantity:number, value:number){
+        return new Item(productId, quantity, value)
     }
 
     public static restore(productId:string, quantity:number, value:number){

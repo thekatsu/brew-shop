@@ -1,5 +1,5 @@
-import Product from "../../../domain/entities/Product";
-import IProductRepository from "../../interfaces/IProductRepository";
+import Product from "../../domain/entities/Product"
+import IProductRepository from "../../domain/interfaces/IProductRepository"
 
 export default class CreateProduct{
     constructor(private productRepository: IProductRepository){}
